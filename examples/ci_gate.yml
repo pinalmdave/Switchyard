@@ -1,0 +1,33 @@
+# Gate a pipeline on the Claude fallback rate observed by Switchyard.
+#
+# Copy the `check` step into any workflow whose jobs call Claude through the
+# Switchyard SDK wrapper or proxy. SWITCHYARD_HOME points every step at the
+# same ledger; `switchyard check` exits non-zero when the rate is breached.
+
+name: claude-fallback-gate
+
+on: [push]
+
+jobs:
+  agent-job:
+    runs-on: ubuntu-latest
+    env:
+      SWITCHYARD_HOME: ${{ github.workspace }}/.switchyard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install switchyard
+        run: pip install switchyard-ai
+
+      # ... your steps that call Claude via the wrapper or proxy ...
+
+      - name: Fail if more than 2% of requests fell back in the last 24h
+        run: switchyard check --max-rate 2% --since 24h
+
+      - name: Attach fallback report to the job summary
+        if: always()
+        run: switchyard report --since 24h --format md >> "$GITHUB_STEP_SUMMARY"

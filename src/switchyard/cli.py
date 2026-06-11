@@ -220,6 +220,131 @@ def demo(simulate: bool, n_requests: int, seed: int) -> None:
     _console.print("Next: [bold]switchyard verify[/bold] to walk the hash chain.")
 
 
+# -- report / audit / check ----------------------------------------------------
+
+
+@main.command()
+@click.option("--since", default=None, help="Window, e.g. 30m, 24h, 7d, 2w.")
+@click.option(
+    "--by",
+    "group_by",
+    default="task_type",
+    show_default=True,
+    type=click.Choice(["task_type", "engagement", "model"]),
+    help="Group breakdown column.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    show_default=True,
+    type=click.Choice(["table", "md", "json"]),
+    help="Output format.",
+)
+def report(since: str | None, group_by: str, output_format: str) -> None:
+    """Show fallback rates from the local ledger.
+
+    \b
+    Examples:
+      switchyard report --since 7d
+      switchyard report --by engagement --format md
+      switchyard report --format json | jq .fallback_rate
+    """
+    from switchyard.report import build_report, render_terminal, to_json, to_markdown
+
+    with Ledger() as ledger:
+        try:
+            data = build_report(ledger, since=since, by=group_by)
+        except ValueError as exc:
+            raise click.BadParameter(str(exc)) from None
+    if output_format == "json":
+        click.echo(to_json(data))
+    elif output_format == "md":
+        click.echo(to_markdown(data), nl=False)
+    else:
+        render_terminal(data, _console)
+
+
+@main.command()
+@click.option("--once", is_flag=True, help="Print capture status and exit (no live watch).")
+@click.option(
+    "--poll-interval", default=1.0, show_default=True, help="Seconds between ledger polls."
+)
+def audit(once: bool, poll_interval: float) -> None:
+    """Confirm capture is working, then watch fallbacks live (Ctrl-C to stop).
+
+    \b
+    Example:
+      switchyard audit          (live view)
+      switchyard audit --once   (status only, for scripts)
+    """
+    from switchyard.report import capture_status, follow_fallbacks
+
+    with Ledger() as ledger:
+        status = capture_status(ledger)
+        if status["capturing"]:
+            _console.print(
+                f"[bold green]capture OK[/bold green] - {status['total_requests']} requests in "
+                f"{status['ledger_path']} (last: {status['last_request_at']})"
+            )
+        else:
+            _console.print(
+                "[bold yellow]no traffic captured yet[/bold yellow] - wrap your client "
+                "(from switchyard import Anthropic) or start 'switchyard proxy', "
+                "then send a request"
+            )
+        _console.print(
+            f"privacy mode: {status['privacy_mode']} | "
+            f"fallback events so far: {status['fallback_events']}"
+        )
+        if once:
+            return
+        _console.print("watching for fallback events (Ctrl-C to stop) ...")
+        try:
+            follow_fallbacks(ledger, _console, poll_interval=poll_interval)
+        except KeyboardInterrupt:
+            _console.print("audit stopped")
+
+
+@main.command()
+@click.option("--max-rate", required=True, help="Threshold, e.g. 0.02 or 2%.")
+@click.option("--since", default=None, help="Window, e.g. 24h. Default: all time.")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON.")
+def check(max_rate: str, since: str | None, as_json: bool) -> None:
+    """CI gate: exit non-zero when the fallback rate breaches --max-rate.
+
+    \b
+    Example:
+      switchyard check --max-rate 2% --since 24h
+    """
+    from switchyard.ci import parse_rate, run_check
+
+    try:
+        threshold = parse_rate(max_rate)
+        if since is not None:
+            from switchyard.report import parse_since
+
+            parse_since(since)  # fail fast on bad input
+    except ValueError as exc:
+        raise click.BadParameter(str(exc)) from None
+    with Ledger() as ledger:
+        result = run_check(ledger, max_rate=threshold, since=since)
+    if as_json:
+        click.echo(json_module.dumps(result.as_dict(), sort_keys=True))
+    elif result.ok:
+        _console.print(
+            f"[bold green]PASS[/bold green] fallback rate {result.fallback_rate:.2%} "
+            f"<= {result.max_rate:.2%} ({result.fallback_events}/{result.total_requests} requests)"
+        )
+    else:
+        _console.print(
+            f"[bold red]FAIL[/bold red] fallback rate {result.fallback_rate:.2%} "
+            f"> {result.max_rate:.2%} ({result.fallback_events}/{result.total_requests} requests)"
+        )
+    if not result.ok:
+        sys.exit(1)
+
+
 # -- proxy -------------------------------------------------------------------
 
 
