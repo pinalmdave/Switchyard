@@ -1,7 +1,7 @@
 # Switchyard
 
-[![CI](https://github.com/pinalmdave/switchyard/actions/workflows/ci.yml/badge.svg)](https://github.com/pinalmdave/switchyard/actions/workflows/ci.yml)
-[![codecov](https://img.shields.io/badge/coverage-94%25-brightgreen)](https://github.com/pinalmdave/switchyard)
+[![CI](https://github.com/pinalmdave/Switchyard/actions/workflows/ci.yml/badge.svg)](https://github.com/pinalmdave/Switchyard/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/pinalmdave/Switchyard/branch/main/graph/badge.svg)](https://codecov.io/gh/pinalmdave/Switchyard)
 [![PyPI](https://img.shields.io/pypi/v/switchyard-ai)](https://pypi.org/project/switchyard-ai/)
 [![Python](https://img.shields.io/pypi/pyversions/switchyard-ai)](https://pypi.org/project/switchyard-ai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
