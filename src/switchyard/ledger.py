@@ -22,6 +22,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import threading
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -157,9 +158,13 @@ class Ledger:
     def __init__(self, path: str | Path | None = None) -> None:
         self.path = Path(path) if path is not None else default_ledger_path()
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(self.path)
+        # Capture surfaces record from worker threads (e.g. Starlette background
+        # tasks); serialize all access through one lock instead of one connection
+        # per thread so the chain head can never race.
+        self._lock = threading.RLock()
+        self._conn = sqlite3.connect(self.path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
-        with self._conn:
+        with self._lock, self._conn:
             self._conn.executescript(_SCHEMA)
             self._conn.execute(
                 "INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', ?)",
@@ -174,7 +179,8 @@ class Ledger:
 
     def close(self) -> None:
         """Close the underlying SQLite connection."""
-        self._conn.close()
+        with self._lock:
+            self._conn.close()
 
     def __enter__(self) -> Ledger:
         return self
@@ -192,13 +198,14 @@ class Ledger:
     @property
     def privacy_mode(self) -> PrivacyMode:
         """The active privacy mode (what gets stored per request)."""
-        row = self._conn.execute("SELECT value FROM meta WHERE key = 'privacy'").fetchone()
+        with self._lock:
+            row = self._conn.execute("SELECT value FROM meta WHERE key = 'privacy'").fetchone()
         return PrivacyMode(row["value"])
 
     def set_privacy_mode(self, mode: PrivacyMode | str) -> PrivacyMode:
         """Persist a new privacy mode; applies to entries appended afterwards."""
         mode = PrivacyMode(mode)
-        with self._conn:
+        with self._lock, self._conn:
             self._conn.execute("UPDATE meta SET value = ? WHERE key = 'privacy'", (mode.value,))
         return mode
 
@@ -227,7 +234,7 @@ class Ledger:
 
     def append_request(self, record: RequestRecord) -> LedgerEntry:
         """Append one request to the chain and return the stored entry."""
-        with self._conn:
+        with self._lock, self._conn:
             # BEGIN IMMEDIATE: take the write lock before reading the chain head
             # so concurrent appenders cannot race on (sequence, prev_hash).
             self._conn.execute("BEGIN IMMEDIATE")
@@ -267,7 +274,7 @@ class Ledger:
             )
         if not 0.0 <= confidence <= 1.0:
             raise ValueError(f"confidence must be in [0, 1], got {confidence}")
-        with self._conn:
+        with self._lock, self._conn:
             cursor = self._conn.execute(
                 "INSERT INTO fallback_events (request_sequence, detection_method, confidence,"
                 " requested_model, served_model, details, created_at)"
@@ -292,7 +299,7 @@ class Ledger:
         original_sha256: str | None = None,
     ) -> int:
         """Record a re-scope suggestion; returns the row id."""
-        with self._conn:
+        with self._lock, self._conn:
             cursor = self._conn.execute(
                 "INSERT INTO rescopes (request_sequence, template_name, original_sha256,"
                 " suggestion, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -304,9 +311,10 @@ class Ledger:
 
     def entries(self) -> Iterator[LedgerEntry]:
         """Yield all chain entries in sequence order."""
-        rows = self._conn.execute(
-            "SELECT sequence, payload, prev_hash, entry_hash FROM requests ORDER BY sequence"
-        )
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT sequence, payload, prev_hash, entry_hash FROM requests ORDER BY sequence"
+            ).fetchall()
         for row in rows:
             yield LedgerEntry(
                 sequence=row["sequence"],
@@ -317,12 +325,14 @@ class Ledger:
 
     def request_count(self) -> int:
         """Number of requests recorded."""
-        row = self._conn.execute("SELECT COUNT(*) AS n FROM requests").fetchone()
+        with self._lock:
+            row = self._conn.execute("SELECT COUNT(*) AS n FROM requests").fetchone()
         return int(row["n"])
 
     def fallback_count(self) -> int:
         """Number of fallback events recorded."""
-        row = self._conn.execute("SELECT COUNT(*) AS n FROM fallback_events").fetchone()
+        with self._lock:
+            row = self._conn.execute("SELECT COUNT(*) AS n FROM fallback_events").fetchone()
         return int(row["n"])
 
     # -- verify ------------------------------------------------------------
@@ -337,9 +347,10 @@ class Ledger:
         prev_hash = GENESIS_HASH
         expected_sequence = 1
         checked = 0
-        rows = self._conn.execute(
-            "SELECT sequence, payload, prev_hash, entry_hash FROM requests ORDER BY sequence"
-        )
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT sequence, payload, prev_hash, entry_hash FROM requests ORDER BY sequence"
+            ).fetchall()
         for row in rows:
             sequence: int = row["sequence"]
             if sequence != expected_sequence:

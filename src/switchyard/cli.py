@@ -220,5 +220,43 @@ def demo(simulate: bool, n_requests: int, seed: int) -> None:
     _console.print("Next: [bold]switchyard verify[/bold] to walk the hash chain.")
 
 
+# -- proxy -------------------------------------------------------------------
+
+
+@main.command()
+@click.option("--port", default=4140, show_default=True, help="Port to listen on.")
+@click.option("--host", default="127.0.0.1", show_default=True, help="Loopback address to bind.")
+@click.option(
+    "--upstream",
+    default="https://api.anthropic.com",
+    show_default=True,
+    help="Upstream API base URL.",
+)
+def proxy(port: int, host: str, upstream: str) -> None:
+    """Start a localhost-only passthrough proxy that audits Claude traffic.
+
+    Point any tool at it and keep working — responses stream through
+    byte-for-byte; detection happens off the response path.
+
+    \b
+    Example:
+      switchyard proxy --port 4140
+      $env:ANTHROPIC_BASE_URL = "http://127.0.0.1:4140"   (PowerShell)
+      export ANTHROPIC_BASE_URL=http://127.0.0.1:4140     (bash)
+    """
+    try:
+        from switchyard.proxy import run_proxy
+    except ImportError as exc:
+        raise click.ClickException(str(exc)) from None
+    _console.print(
+        f"switchyard proxy listening on http://{host}:{port} -> {upstream}\n"
+        f"Set ANTHROPIC_BASE_URL=http://{host}:{port} in the tool you want to audit."
+    )
+    try:
+        run_proxy(host=host, port=port, upstream=upstream)
+    except ValueError as exc:
+        raise click.BadParameter(str(exc)) from None
+
+
 if __name__ == "__main__":
     main()

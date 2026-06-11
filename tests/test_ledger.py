@@ -82,6 +82,18 @@ def test_entries_round_trip() -> None:
     assert loaded.payload["requested_model"] == FABLE
 
 
+def test_concurrent_appends_from_threads_keep_chain_intact() -> None:
+    from concurrent.futures import ThreadPoolExecutor
+
+    with Ledger() as ledger:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(lambda i: ledger.append_request(make_record(i)), range(24)))
+        assert ledger.request_count() == 24
+        result = ledger.verify()
+    assert result.ok
+    assert result.entries_checked == 24
+
+
 def test_reopen_continues_chain() -> None:
     with Ledger() as ledger:
         ledger.append_request(make_record(1))

@@ -20,6 +20,7 @@ from __future__ import annotations
 import math
 import re
 import sqlite3
+import threading
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -167,9 +168,12 @@ class BaselineStore:
     def __init__(self, path: str | Path | None = None) -> None:
         self.path = Path(path) if path is not None else switchyard_home() / "baselines.db"
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(self.path)
+        # Same thread-safety contract as Ledger: capture surfaces may record
+        # from worker threads, so serialize access through one lock.
+        self._lock = threading.RLock()
+        self._conn = sqlite3.connect(self.path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
-        with self._conn:
+        with self._lock, self._conn:
             self._conn.execute(
                 "CREATE TABLE IF NOT EXISTS baselines ("
                 " model TEXT NOT NULL, signal TEXT NOT NULL,"
@@ -179,7 +183,8 @@ class BaselineStore:
 
     def close(self) -> None:
         """Close the underlying SQLite connection."""
-        self._conn.close()
+        with self._lock:
+            self._conn.close()
 
     def __enter__(self) -> BaselineStore:
         return self
@@ -195,7 +200,7 @@ class BaselineStore:
     def add_sample(self, model: str, signal: str, value: float) -> None:
         """Fold one sample into the running statistics (Welford update)."""
         model = model_family(model)
-        with self._conn:
+        with self._lock, self._conn:
             row = self._conn.execute(
                 "SELECT count, mean, m2 FROM baselines WHERE model = ? AND signal = ?",
                 (model, signal),
@@ -216,10 +221,11 @@ class BaselineStore:
 
     def stats(self, model: str, signal: str) -> tuple[int, float, float] | None:
         """Return ``(count, mean, sample_stddev)`` for a signal, or ``None``."""
-        row = self._conn.execute(
-            "SELECT count, mean, m2 FROM baselines WHERE model = ? AND signal = ?",
-            (model_family(model), signal),
-        ).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT count, mean, m2 FROM baselines WHERE model = ? AND signal = ?",
+                (model_family(model), signal),
+            ).fetchone()
         if row is None:
             return None
         count = int(row["count"])
@@ -228,9 +234,10 @@ class BaselineStore:
 
     def sample_count(self, model: str) -> int:
         """Smallest per-signal sample count for a model (gates heuristics)."""
-        rows = self._conn.execute(
-            "SELECT count FROM baselines WHERE model = ?", (model_family(model),)
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT count FROM baselines WHERE model = ?", (model_family(model),)
+            ).fetchall()
         if not rows:
             return 0
         return min(int(row["count"]) for row in rows)
