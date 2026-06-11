@@ -68,8 +68,8 @@ def main() -> None:
         y += 40
 
     # Footer badges row
-    d.text((84, 588), "MIT  -  local & tamper-evident  -  Claude Code plugin  -  pip install switchyard-ai",
-            font=small, fill=MUTED)
+    footer = "MIT  -  local & tamper-evident  -  Claude Code plugin  -  pip install switchyard-ai"
+    d.text((84, 588), footer, font=small, fill=MUTED)
 
     out = Path("docs/social-preview.png")
     out.parent.mkdir(parents=True, exist_ok=True)
