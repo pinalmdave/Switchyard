@@ -43,6 +43,11 @@ export ANTHROPIC_BASE_URL=http://127.0.0.1:4140
 
 ## What it looks like
 
+![Switchyard demo: report shows the fallback rate, rescope suggests a compliant reframe, verify walks the tamper-evident chain](docs/demo.gif)
+
+<details>
+<summary>Same flow as text</summary>
+
 ```
 $ switchyard report
         Switchyard fallback report
@@ -57,7 +62,7 @@ $ switchyard report
 └─────────────────────────┴────────┘
 ```
 
-> Screenshot/GIF placeholder — replace with an asciinema cast before launch.
+</details>
 
 ## What it detects, and how (honestly)
 
