@@ -1,0 +1,65 @@
+{
+  "description": "Responses that declare a different serving model — every one must be detected with method=declared, confidence=1.0.",
+  "observations": [
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": 5102.3,
+      "response": {
+        "id": "msg_01FallbackBody",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-opus-4-8",
+        "usage": { "input_tokens": 388, "output_tokens": 290 }
+      },
+      "headers": {}
+    },
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": 4720.0,
+      "response": {
+        "id": "msg_01FallbackBodySnapshot",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-opus-4-8-20260120",
+        "usage": { "input_tokens": 1204, "output_tokens": 655 }
+      },
+      "headers": {}
+    },
+    {
+      "requested_model": "claude-fable-5-20260609",
+      "latency_ms": 6981.4,
+      "response": {
+        "id": "msg_01FallbackFromSnapshotAlias",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-opus-4-8",
+        "usage": { "input_tokens": 240, "output_tokens": 198 }
+      },
+      "headers": {}
+    },
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": 5530.8,
+      "response": {
+        "id": "msg_01FallbackHeaderOnly",
+        "type": "message",
+        "role": "assistant",
+        "model": null,
+        "usage": { "input_tokens": 612, "output_tokens": 344 }
+      },
+      "headers": { "anthropic-served-by": "claude-opus-4-8" }
+    },
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": 5912.6,
+      "response": {
+        "id": "msg_01FallbackHeaderContradictsBody",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-fable-5",
+        "usage": { "input_tokens": 455, "output_tokens": 401 }
+      },
+      "headers": { "x-served-by": "claude-opus-4-8" }
+    }
+  ]
+}

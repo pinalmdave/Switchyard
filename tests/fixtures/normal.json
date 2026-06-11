@@ -1,0 +1,77 @@
+{
+  "description": "Responses served by the requested model — must produce zero fallback events.",
+  "observations": [
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": 7820.4,
+      "response": {
+        "id": "msg_01NormalA",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-fable-5",
+        "usage": { "input_tokens": 412, "output_tokens": 380 }
+      },
+      "headers": {}
+    },
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": 15233.0,
+      "response": {
+        "id": "msg_01NormalB",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-fable-5",
+        "usage": { "input_tokens": 2210, "output_tokens": 743 }
+      },
+      "headers": { "request-id": "req_011" }
+    },
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": 9120.7,
+      "response": {
+        "id": "msg_01NormalAliasSnapshot",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-fable-5-20260609",
+        "usage": { "input_tokens": 530, "output_tokens": 441 }
+      },
+      "headers": {}
+    },
+    {
+      "requested_model": "claude-fable-5-20260609",
+      "latency_ms": 8101.9,
+      "response": {
+        "id": "msg_01NormalAliasReverse",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-fable-5",
+        "usage": { "input_tokens": 318, "output_tokens": 405 }
+      },
+      "headers": {}
+    },
+    {
+      "requested_model": "claude-opus-4-8",
+      "latency_ms": 6233.1,
+      "response": {
+        "id": "msg_01NormalOpusOnPurpose",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-opus-4-8",
+        "usage": { "input_tokens": 220, "output_tokens": 310 }
+      },
+      "headers": {}
+    },
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": 10412.5,
+      "response": {
+        "id": "msg_01NormalHeaderConfirm",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-fable-5",
+        "usage": { "input_tokens": 901, "output_tokens": 512 }
+      },
+      "headers": { "anthropic-served-by": "claude-fable-5" }
+    }
+  ]
+}

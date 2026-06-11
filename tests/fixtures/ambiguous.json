@@ -1,0 +1,52 @@
+{
+  "description": "Responses that declare nothing about the serving model — declared detection must return no verdict (heuristics may judge these, never as certainties).",
+  "observations": [
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": 8423.9,
+      "response": {
+        "id": "msg_01AmbiguousNullModel",
+        "type": "message",
+        "role": "assistant",
+        "model": null,
+        "usage": { "input_tokens": 502, "output_tokens": 390 }
+      },
+      "headers": {}
+    },
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": 7911.2,
+      "response": {
+        "id": "msg_01AmbiguousMissingModel",
+        "type": "message",
+        "role": "assistant",
+        "usage": { "input_tokens": 130, "output_tokens": 220 }
+      },
+      "headers": { "request-id": "req_077" }
+    },
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": null,
+      "response": {
+        "id": "msg_01AmbiguousNoTimings",
+        "type": "message",
+        "role": "assistant",
+        "model": null,
+        "usage": { "input_tokens": 88, "output_tokens": 0 }
+      },
+      "headers": {}
+    },
+    {
+      "requested_model": "claude-fable-5",
+      "latency_ms": 6100.0,
+      "response": {
+        "id": "msg_01AmbiguousEmptyModel",
+        "type": "message",
+        "role": "assistant",
+        "model": "",
+        "usage": { "input_tokens": 240, "output_tokens": 311 }
+      },
+      "headers": {}
+    }
+  ]
+}
