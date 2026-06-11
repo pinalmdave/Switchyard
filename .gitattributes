@@ -1,0 +1,11 @@
+# Normalize line endings. Shell scripts MUST stay LF or they break on Linux.
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Treat binary assets as binary (no EOL munging, no diff noise).
+*.gif binary
+*.png binary
+*.cast binary
