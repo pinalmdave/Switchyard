@@ -2,15 +2,17 @@
 
 Public API (grows session by session, see SESSIONS.md):
 
+- :class:`switchyard.client.Anthropic` / :class:`switchyard.client.AsyncAnthropic` —
+  drop-in wrapped SDK clients — and :func:`switchyard.client.context` for tagging
 - :data:`__version__`
 - :class:`switchyard.ledger.Ledger` and friends (hash-chained local ledger)
 - :class:`switchyard.detect.DetectionEngine` and the :class:`switchyard.detect.Detector`
   protocol (fallback detection)
 
-The wrapped ``Anthropic`` client and ``audit`` entry points arrive with the
-capture-surface and reporting sessions.
+The ``audit`` entry point arrives with the reporting session.
 """
 
+from switchyard.client import Anthropic, AsyncAnthropic, context
 from switchyard.detect import (
     DetectionEngine,
     DetectionResult,
@@ -28,6 +30,8 @@ from switchyard.ledger import (
 __version__ = "0.1.0"
 
 __all__ = [
+    "Anthropic",
+    "AsyncAnthropic",
     "DetectionEngine",
     "DetectionResult",
     "Detector",
@@ -38,4 +42,5 @@ __all__ = [
     "ResponseObservation",
     "VerifyResult",
     "__version__",
+    "context",
 ]
