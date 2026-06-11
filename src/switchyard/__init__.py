@@ -19,6 +19,12 @@ from switchyard.detect import (
     Detector,
     ResponseObservation,
 )
+from switchyard.export import (
+    ExportDocument,
+    ExportVerifyResult,
+    build_export,
+    verify_export_file,
+)
 from switchyard.ledger import (
     Ledger,
     LedgerEntry,
@@ -35,6 +41,8 @@ __all__ = [
     "DetectionEngine",
     "DetectionResult",
     "Detector",
+    "ExportDocument",
+    "ExportVerifyResult",
     "Ledger",
     "LedgerEntry",
     "PrivacyMode",
@@ -42,5 +50,7 @@ __all__ = [
     "ResponseObservation",
     "VerifyResult",
     "__version__",
+    "build_export",
     "context",
+    "verify_export_file",
 ]

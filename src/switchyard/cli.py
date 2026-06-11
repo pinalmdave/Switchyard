@@ -9,6 +9,7 @@ from __future__ import annotations
 import json as json_module
 import random
 import sys
+from pathlib import Path
 
 import click
 from rich.console import Console
@@ -502,6 +503,86 @@ def templates_show(name: str) -> None:
             _console.print(f"example_after: {template.example_after.strip()}")
             return
     raise click.ClickException(f"no template named {name!r} (try: switchyard templates list)")
+
+
+# -- export / verify-export ----------------------------------------------------
+
+
+@main.command()
+@click.option("--engagement", default=None, help="Only export entries with this tag.")
+@click.option(
+    "--format",
+    "output_format",
+    default="json",
+    show_default=True,
+    type=click.Choice(["json", "md"]),
+    help="Output format.",
+)
+@click.option(
+    "--output", "-o", type=click.Path(dir_okay=False), default=None, help="Write to a file."
+)
+def export(engagement: str | None, output_format: str, output: str | None) -> None:
+    """Produce a signed, self-contained export of ledger entries.
+
+    The export carries the chain head and an HMAC signature so a third party can
+    verify it offline (see docs/LEDGER_FORMAT.md and switchyard verify-export).
+
+    \b
+    Examples:
+      switchyard export --engagement acme-q2 -o acme.json
+      switchyard export --format md
+    """
+    from switchyard.export import build_export, export_markdown
+
+    with Ledger() as ledger:
+        doc = build_export(ledger, engagement=engagement)
+    text = export_markdown(doc) if output_format == "md" else doc.to_json()
+    if output:
+        Path(output).write_text(text, encoding="utf-8")
+        _console.print(
+            f"wrote {doc.document['entry_count']} entries to {output} "
+            f"(signature {doc.signature[:16]}...)"
+        )
+    else:
+        click.echo(text)
+
+
+@main.command(name="verify-export")
+@click.argument("file", type=click.Path(exists=True, dir_okay=False))
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON.")
+def verify_export(file: str, as_json: bool) -> None:
+    """Verify a signed export FILE offline (signature + internal hash chain).
+
+    Exits non-zero if either check fails.
+
+    \b
+    Example:
+      switchyard verify-export acme.json
+    """
+    from switchyard.export import verify_export_file
+
+    result = verify_export_file(file)
+    if as_json:
+        click.echo(
+            json_module.dumps(
+                {
+                    "ok": result.ok,
+                    "signature_valid": result.signature_valid,
+                    "chain_valid": result.chain_valid,
+                    "entry_count": result.entry_count,
+                    "error": result.error,
+                }
+            )
+        )
+    elif result.ok:
+        _console.print(
+            f"[bold green]OK: export verified[/bold green] - "
+            f"{result.entry_count} entries, signature + chain valid"
+        )
+    else:
+        _console.print(f"[bold red]FAILED: export invalid[/bold red] - {result.error}")
+    if not result.ok:
+        sys.exit(1)
 
 
 # -- proxy -------------------------------------------------------------------
