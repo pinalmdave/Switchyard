@@ -35,6 +35,11 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
+    # Opt-in gate: publishing to PyPI is permanent (a version can never be
+    # reused), so it only runs once you set the repo variable PUBLISH_TO_PYPI
+    # to "true" AND have configured a PyPI Trusted Publisher for switchyard-ai.
+    # Until then, tagging a release builds + tests green and skips publish.
+    if: ${{ vars.PUBLISH_TO_PYPI == 'true' }}
     environment: pypi
     permissions:
       id-token: write # required for PyPI Trusted Publishing (OIDC)
