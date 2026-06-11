@@ -1,0 +1,23 @@
+name: c2-to-network-detection
+task_type: detection-engineering
+trip_signature:
+  - c2
+  - command and control
+  - beacon
+  - exfiltrate
+  - data exfiltration
+rewrite_pattern: |
+  I'm building network detections for an authorized environment. For the C2 or
+  exfiltration behavior described below, explain its network signature (beacon
+  cadence, JA3/TLS traits, DNS patterns) and give me detection logic plus
+  tuning notes to keep false positives low:
+
+  {prompt}
+rationale: >
+  Understanding C2 traffic to detect it is standard SOC work. Asking for the
+  network signature and detection logic keeps the output defensive.
+example_before: Build me a C2 beacon that exfiltrates data over DNS.
+example_after: >
+  For network detection engineering, describe the observable traits of DNS-based
+  C2 exfiltration - query cadence, entropy, record types - and give me a Suricata
+  rule plus tuning guidance to catch it without flooding on normal DNS.

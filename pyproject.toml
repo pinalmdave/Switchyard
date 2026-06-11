@@ -61,6 +61,8 @@ path = "src/switchyard/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/switchyard"]
+# Ship the YAML template library inside the wheel (F-RSC-01).
+include = ["src/switchyard/templates/*.yaml"]
 
 [tool.ruff]
 line-length = 100

@@ -345,6 +345,165 @@ def check(max_rate: str, since: str | None, as_json: bool) -> None:
         sys.exit(1)
 
 
+# -- rescope / templates -------------------------------------------------------
+
+
+@main.command()
+@click.argument("prompt")
+@click.option("--task-type", default=None, help="Hint the task type to bias matching.")
+@click.option("--llm", is_flag=True, help="Draft a tailored reframe with your Claude key.")
+@click.option(
+    "--model",
+    default=None,
+    help="Model for --llm (default: claude-sonnet-4-6).",
+)
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON.")
+def rescope(
+    prompt: str, task_type: str | None, llm: bool, model: str | None, as_json: bool
+) -> None:
+    """Suggest a compliant reframe that keeps work on the frontier model.
+
+    Matches PROMPT against the template library; never sends anything unless you
+    pass --llm (which uses your own ANTHROPIC_API_KEY). Suggestions only.
+
+    \b
+    Examples:
+      switchyard rescope "exploit this binary"
+      switchyard rescope "crack these hashes" --task-type credential-audit
+      switchyard rescope "write a phishing email" --llm
+    """
+    from switchyard.ledger import hash_prompt
+    from switchyard.rescope import (
+        DEFAULT_LLM_MODEL,
+        match_templates,
+        render_suggestion,
+    )
+
+    matches = match_templates(prompt, task_type=task_type)
+    if not matches:
+        if as_json:
+            click.echo(json_module.dumps({"matches": [], "suggestion": None}))
+        else:
+            _console.print(
+                "[yellow]No template matched.[/yellow] Try --task-type, or use --llm "
+                "to draft a tailored reframe with your own key."
+            )
+        if not llm:
+            return
+
+    top = matches[0].template if matches else None
+    suggestion = render_suggestion(top, prompt) if top is not None else None
+
+    if llm:
+        suggestion = _llm_reframe(prompt, top, model or DEFAULT_LLM_MODEL)
+
+    if not as_json:
+        for match in matches:
+            _console.print(
+                f"[bold]{match.template.name}[/bold] "
+                f"(task={match.template.task_type}, score={match.score:.0f}, "
+                f"matched={', '.join(match.matched_signals) or '-'})"
+            )
+            _console.print(f"  rationale: {match.template.rationale.strip()}")
+        if suggestion is not None:
+            _console.print("\n[bold green]Suggested reframe[/bold green] (not sent anywhere):")
+            _console.print(suggestion)
+    else:
+        click.echo(
+            json_module.dumps(
+                {
+                    "matches": [
+                        {
+                            "name": m.template.name,
+                            "task_type": m.template.task_type,
+                            "score": m.score,
+                            "matched_signals": m.matched_signals,
+                        }
+                        for m in matches
+                    ],
+                    "suggestion": suggestion,
+                    "llm": llm,
+                }
+            )
+        )
+
+    if suggestion is not None:
+        with Ledger() as ledger:
+            ledger.record_rescope(
+                suggestion=suggestion,
+                template_name=top.name if top is not None else None,
+                original_sha256=hash_prompt(prompt),
+            )
+
+
+def _llm_reframe(prompt: str, template: object, model: str) -> str:
+    """Call the user's own Claude client to draft a tailored reframe."""
+    import os
+
+    from switchyard.rescope import build_llm_messages
+
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise click.ClickException(
+            "--llm needs ANTHROPIC_API_KEY in the environment (your key, your call)."
+        )
+    import anthropic
+
+    from switchyard.rescope import Template
+
+    client = anthropic.Anthropic()
+    tmpl = template if isinstance(template, Template) else None
+    messages = build_llm_messages(prompt, tmpl)
+    response = client.messages.create(model=model, max_tokens=1024, messages=messages)  # type: ignore[arg-type]
+    return "".join(block.text for block in response.content if block.type == "text").strip()
+
+
+@main.group()
+def templates() -> None:
+    """List or show built-in and user re-scope templates."""
+
+
+@templates.command("list")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON.")
+def templates_list(as_json: bool) -> None:
+    """List available templates (built-in + user)."""
+    from switchyard.rescope import load_templates
+
+    items = load_templates()
+    if as_json:
+        click.echo(
+            json_module.dumps(
+                [{"name": t.name, "task_type": t.task_type, "source": t.source} for t in items]
+            )
+        )
+        return
+    table = Table(title=f"Re-scope templates ({len(items)})")
+    table.add_column("Name")
+    table.add_column("Task type")
+    table.add_column("Source")
+    for template in items:
+        table.add_row(template.name, template.task_type, template.source)
+    _console.print(table)
+
+
+@templates.command("show")
+@click.argument("name")
+def templates_show(name: str) -> None:
+    """Show one template by NAME (pattern, rationale, before/after)."""
+    from switchyard.rescope import load_templates
+
+    for template in load_templates():
+        if template.name == name:
+            _console.print(f"[bold]{template.name}[/bold] ({template.source})")
+            _console.print(f"task_type: {template.task_type}")
+            _console.print(f"trip_signature: {', '.join(template.trip_signature)}")
+            _console.print(f"\nrewrite_pattern:\n{template.rewrite_pattern.strip()}")
+            _console.print(f"\nrationale: {template.rationale.strip()}")
+            _console.print(f"\nexample_before: {template.example_before.strip()}")
+            _console.print(f"example_after: {template.example_after.strip()}")
+            return
+    raise click.ClickException(f"no template named {name!r} (try: switchyard templates list)")
+
+
 # -- proxy -------------------------------------------------------------------
 
 

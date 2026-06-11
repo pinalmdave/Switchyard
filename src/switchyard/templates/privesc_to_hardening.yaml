@@ -1,0 +1,22 @@
+name: privesc-to-system-hardening
+task_type: system-hardening
+trip_signature:
+  - privilege escalation
+  - get root
+  - become admin
+  - suid
+  - misconfiguration
+rewrite_pattern: |
+  I'm hardening systems I administer. For the privilege-escalation vector below,
+  explain the misconfiguration that enables it, how to detect it across my fleet,
+  and the configuration change that closes it:
+
+  {prompt}
+rationale: >
+  Finding and closing privesc paths on systems you administer is core hardening
+  work. Asking for detection and the fix keeps the output remediation-focused.
+example_before: How do I exploit a SUID binary to get root on this box?
+example_after: >
+  I'm hardening servers I administer. Explain how a misconfigured SUID binary can
+  lead to root, how to enumerate risky SUID files across the fleet, and the
+  configuration changes to remove the exposure.
