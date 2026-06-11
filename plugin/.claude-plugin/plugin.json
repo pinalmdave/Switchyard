@@ -1,0 +1,13 @@
+{
+  "name": "switchyard",
+  "version": "0.1.0",
+  "description": "Detect when Claude silently falls back from Fable 5 to Opus 4.8, log it to a local tamper-evident ledger, and suggest compliant re-scopes — all from inside Claude Code.",
+  "author": { "name": "Switchyard contributors" },
+  "homepage": "https://github.com/pinalmdave/switchyard",
+  "repository": "https://github.com/pinalmdave/switchyard",
+  "license": "MIT",
+  "keywords": ["claude", "fallback", "audit", "security", "ledger"],
+  "commands": "./commands",
+  "skills": "./skills",
+  "mcpServers": "./.mcp.json"
+}

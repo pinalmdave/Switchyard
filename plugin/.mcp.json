@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "switchyard": {
+      "command": "switchyard",
+      "args": ["mcp"]
+    }
+  }
+}

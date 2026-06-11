@@ -623,5 +623,26 @@ def proxy(port: int, host: str, upstream: str) -> None:
         raise click.BadParameter(str(exc)) from None
 
 
+# -- mcp ---------------------------------------------------------------------
+
+
+@main.command()
+def mcp() -> None:
+    """Start the read-only MCP server (stdio) over the local ledger.
+
+    Exposes get_fallback_summary, list_fallback_events, suggest_rescope, and
+    verify_ledger to any MCP client. Read-only; nothing leaves the machine.
+
+    \b
+    Example:
+      switchyard mcp
+    """
+    try:
+        from switchyard.mcp_server import main as mcp_main
+    except ImportError as exc:
+        raise click.ClickException(str(exc)) from None
+    mcp_main()
+
+
 if __name__ == "__main__":
     main()
