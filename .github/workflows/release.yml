@@ -1,0 +1,47 @@
+name: Release
+
+# Tag a release (vX.Y.Z) to build the distribution and publish to PyPI via
+# Trusted Publishing (OIDC) — no API tokens stored in the repo.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Verify the tag matches the package version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(uv run python -c 'import switchyard; print(switchyard.__version__)')"
+          echo "tag=$TAG package=$PKG"
+          test "$TAG" = "$PKG"
+      - name: Run the full test suite
+        run: uv run pytest -m "not live"
+      - name: Build sdist + wheel
+        run: uv build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # required for PyPI Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

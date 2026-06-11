@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest an idea for Switchyard
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check [docs/ROADMAP.md](../blob/main/docs/ROADMAP.md) first — hosted /
+        multi-tenant / dashboard features are intentionally out of scope for this repo.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: The user need, not just the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This fits the open-source core (not the planned hosted platform).
+          required: true
+        - label: This preserves the privacy guarantees (no telemetry, nothing leaves the machine).
+          required: true

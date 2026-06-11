@@ -1,0 +1,47 @@
+name: Bug report
+description: Report a problem with Switchyard
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. For security vulnerabilities, please use
+        [SECURITY.md](../blob/main/SECURITY.md) instead of this form.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Commands or code. Please use the simulated path where possible.
+      placeholder: |
+        1. switchyard demo --simulate
+        2. switchyard report
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Switchyard version
+      description: Output of `switchyard --version`
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version & OS
+      placeholder: "3.12 on macOS 14"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: Paste any error output. Do NOT paste prompt content or API keys.
+      render: shell
